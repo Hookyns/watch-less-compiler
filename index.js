@@ -25,36 +25,43 @@ const paths = ARGS.map(path => {
  * Compile given LESS style
  * @param {String} file File name
  */
-function compileLessFile(file) {
-	return $fs.readFile(file, "utf-8", (err, data) => {
-		if (err) {
-			console.warn("Error ocurs while reading file '" + file + "' while less compiling.");
-			return;
-		}
-
-		// Compile less to css with compression
-		$less.render(data, {compress: true}, (err, compiled) => {
+async function compileLessFile(file) {
+	return new Promise(function (resolve, reject) {
+		$fs.readFile(file, "utf-8", (err, data) => {
 			if (err) {
-				//noinspection JSAccessibilityCheck
-				console.warn("Error ocurs while compiling less style '" + file
-					+ "' in styles compiling processBlock.");
+				console.warn("Error ocurs while reading file '" + file + "' while less compiling.");
+				reject();
 				return;
 			}
 
-			// create name for CSS file
-			file = file.substr(0, file.length - 4) + "css";
-
-			// Write to CSS file
-			$fs.writeFile(file, compiled.css, (err) => {
+			// Compile less to css with compression
+			$less.render(data, {compress: true}, (err, compiled) => {
 				if (err) {
 					//noinspection JSAccessibilityCheck
-					console.warn("Error ocurs while writing compiled file '" + file
+					console.warn("Error ocurs while compiling less style '" + file
 						+ "' in styles compiling processBlock.");
+					reject();
 					return;
 				}
 
-				//noinspection JSAccessibilityCheck
-				console.log("Less style was compiled into '" + file + "'");
+				// create name for CSS file
+				file = file.substr(0, file.length - 4) + "css";
+
+				// Write to CSS file
+				$fs.writeFile(file, compiled.css, (err) => {
+					if (err) {
+						//noinspection JSAccessibilityCheck
+						console.warn("Error ocurs while writing compiled file '" + file
+							+ "' in styles compiling processBlock.");
+						reject();
+						return;
+					}
+
+					//noinspection JSAccessibilityCheck
+					console.log("Less style was compiled into '" + file + "'");
+
+					resolve();
+				});
 			});
 		});
 	});
@@ -89,33 +96,48 @@ function matchFiles(path, filter) {
  * Compile files under given path
  * @param {String} path
  */
-function compileFolder(path) {
+async function compileFolder(path) {
 	const lessFiles = matchFiles(path, /\.less$/);
+	const proms = [];
 
 	for (let file of lessFiles) {
-		compileLessFile(file);
+		proms.push(compileLessFile(file));
 	}
+
+	return Promise.all(proms);
 }
 
-// Go through input paths and start watching them
-for (let path of paths) {
-	try {
-		let nextChangeAfter = new Date();
+(async function () {
+	// Go through input paths and start watching them
+	for (let path of paths) {
+		try {
+			// First copile that folder
+			await compileFolder(path);
 
-		$fs.watch(path, function (eventType, filename) {
-			// Cuz some OSs emit more messages for one event
-			setTimeout(() => {
+			let nextChangeAfter = new Date();
+			let changes = [];
+
+			$fs.watch(path, function (eventType, filename) {
+				changes.push(filename);
+
 				if ((new Date()).getTime() < nextChangeAfter) {
 					return;
 				}
 				nextChangeAfter = new Date().getTime() + 1000;
 
-				if (filename.match(/\.less/)) {
-					compileFolder(path);
-				}
-			}, 100);
-		});
-	} catch (ex) {
-		console.error("Trying to watch path '" + path + "' caused error. ", ex.message);
+				// Cuz some OSs emit more messages for one event
+				setTimeout(() => {
+					// After time out check if some file in last 1 second was LESS
+					if (changes.some(el => el.match(/\.less/))) {
+						// noinspection JSIgnoredPromiseFromCall
+						compileFolder(path);
+					}
+				}, 100);
+			});
+		} catch (ex) {
+			console.error("Trying to watch path '" + path + "' caused error. ", ex.message);
+		}
 	}
-}
+
+	console.log("Watch LESS Compiler is watching...");
+})();
