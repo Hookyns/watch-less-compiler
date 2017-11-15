@@ -1,3 +1,7 @@
+.idea*
+dev-tests*
+package-lock.json
+
 # Logs
 logs
 *.log

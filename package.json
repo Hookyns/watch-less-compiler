@@ -1,0 +1,19 @@
+{
+	"name": "watch-less-compiler",
+	"version": "1.0.0",
+	"description": "Node.js package which watches less files in given folder and compile them into css.",
+	"main": "index.js",
+	"scripts": {
+		"test": "mocha"
+	},
+	"keywords": [
+		"less",
+		"watch",
+		"compile"
+	],
+	"author": "Roman Jámbor",
+	"license": "MIT",
+	"dependencies": {
+		"less": "^2.7.3"
+	}
+}
