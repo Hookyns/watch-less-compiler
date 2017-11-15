@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const $less = require("less");
 const $fs = require("fs");
 const $path = require("path");
