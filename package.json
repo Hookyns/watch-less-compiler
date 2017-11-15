@@ -3,6 +3,9 @@
 	"version": "1.0.0",
 	"description": "Node.js package which watches less files in given folder and compile them into css.",
 	"main": "index.js",
+	"bin": {
+		"watch-less-compiler": "./index.js"
+	},
 	"scripts": {
 		"test": "mocha"
 	},
