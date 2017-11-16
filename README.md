@@ -18,7 +18,7 @@ const $watch = require("watch-less-compiler");
 $watch.watch(["path/to/your/dir", "second/path/to/another/dirr"], function(msg, msgType) {
 	// This function is optional parameter. It's just logging callback
 	
-	if (type === $watch.msgType.ERR) {
+	if (msgType === $watch.msgType.ERR) {
 		console.error(msg);
 	} else {
 		console.log(msg);
