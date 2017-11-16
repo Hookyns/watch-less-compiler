@@ -6,9 +6,24 @@ Node.js package which watches less files in given folders and compile them into 
 npm install watch-less-compiler -g
 ```
 
-## Start watching
+## Start watching from cmd
 ```
 watch-less-compiler path/to/your/dir second/path/to/another/dirr and/more/paths
+```
+
+## Using as module
+```
+const $watch = require("watch-less-compiler");
+
+$watch.watch(["path/to/your/dir", "second/path/to/another/dirr"], function(msg, msgType) {
+	// This function is optional parameter. It's just logging callback
+	
+	if (type === $watch.msgType.ERR) {
+		console.error(msg);
+	} else {
+		console.log(msg);
+	}
+});
 ```
 
 ## How does it work
