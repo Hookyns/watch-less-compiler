@@ -1,6 +1,7 @@
 const $less = require("less");
 const $fs = require("fs");
 const $path = require("path");
+const $glob = require("glob");
 
 /**
  * Compile given LESS style
@@ -16,9 +17,9 @@ async function compileLessFile(file, logger) {
 			}
 
 			// Compile less to css with compression
-			$less.render(data, {compress: true}, (err, compiled) => {
+			$less.render(data, {compress: true, paths: [$path.dirname(file)]}, (err, compiled) => {
 				if (err) {
-					reject(new Error("Error ocurs while compiling less style '" + file + "'"));
+					reject(new Error("Error ocurs while compiling less style '" + file + "'. " + err.message));
 					return;
 				}
 
@@ -28,7 +29,7 @@ async function compileLessFile(file, logger) {
 				// Write to CSS file
 				$fs.writeFile(file, compiled.css, (err) => {
 					if (err) {
-						reject(new Error("Error ocurs while writing compiled file '" + file + "'"));
+						reject(new Error("Error ocurs while writing compiled file '" + file + "'. " + err.message));
 						return;
 					}
 
@@ -55,7 +56,8 @@ function matchFiles(path, filter) {
 		let stat = $fs.lstatSync(filename);
 
 		if (stat.isDirectory()) {
-			list = list.concat(matchFiles(filename, filter));
+			// Ignore nested folders. Nested folders should be included by path pattern
+			//list = list.concat(matchFiles(filename, filter));
 		}
 		else if (filter.test(filename)) {
 			list.push(filename);
@@ -96,40 +98,63 @@ async function compileFolder(path, logger) {
 async function watch (paths, logger) {
 	if (!logger) logger = function() {};
 
+	let failedPaths = 0;
+
 	// Go through input paths and start watching them
 	for (let path of paths) {
 		try {
-			// First copile that folder
-			await compileFolder(path, logger);
+			await new Promise(function(done) {
+				$glob(path, async function(err, paths) {
+					if (err) throw err;
 
-			let nextChangeAfter = new Date();
-			let changes = [];
+					for (let path of paths) {
+						try {
+							// First copile that folder
+							await compileFolder(path, logger);
 
-			$fs.watch(path, function (eventType, filename) {
-				changes.push(filename);
+							let nextChangeAfter = new Date();
+							let changes = [];
 
-				if ((new Date()).getTime() < nextChangeAfter) {
-					return;
-				}
-				nextChangeAfter = new Date().getTime() + 1000;
+							$fs.watch(path, function (eventType, filename) {
+								changes.push(filename);
 
-				// Cuz some OSs emit more messages for one event
-				setTimeout(() => {
-					// After time out check if some file in last 1 second was LESS
-					if (changes.some(el => el.match(/\.less/))) {
-						// noinspection JSIgnoredPromiseFromCall
-						compileFolder(path, logger).catch(function(err) {
-							logger(err.message, watch.ERR);
-						});
+								if ((new Date()).getTime() < nextChangeAfter) {
+									return;
+								}
+
+								nextChangeAfter = new Date().getTime() + 1000;
+
+								// Cuz some OSs emit more messages for one event
+								setTimeout(() => {
+									// After time out check if some file in last 1 second was LESS
+									if (changes.some(el => el.match(/\.less$/))) {
+										// noinspection JSIgnoredPromiseFromCall
+										compileFolder(path, logger).catch(function(err) {
+											logger(err.message, watch.ERR);
+										});
+									}
+
+									changes = [];
+								}, 100);
+							});
+						} catch (ex) {
+							logger("Path '" + path + "' caused error. " + ex.message, watch.ERR);
+							failedPaths++;
+						}
 					}
-				}, 100);
+
+					done();
+				});
 			});
 		} catch (ex) {
-			logger("Trying to watch path '" + path + "' caused error. " + ex.message, watch.ERR);
+			logger("Path '" + path + "' caused error. " + ex.message, watch.ERR);
+			failedPaths++;
 		}
 	}
 
-	logger("Watch LESS Compiler is watching...", watch.INFO);
+	if (failedPaths != paths.length) {
+		logger("Watch LESS Compiler is watching...", watch.INFO);
+	}
 }
 
 module.exports = {

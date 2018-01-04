@@ -17,7 +17,8 @@
 	"author": "Roman Jámbor",
 	"license": "MIT",
 	"dependencies": {
-		"less": "^2.7.3"
+		"less": "^2.7.3",
+    "glob": "^7.1.2"
 	},
 	"repository": {
 		"type": "git",
