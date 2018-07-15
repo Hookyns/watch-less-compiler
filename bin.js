@@ -13,8 +13,18 @@ if (ARGS.length === 0) {
 	return;
 }
 
+const args = ARGS;
+
+// Just compile arg?
+let justCompileIndex = args.indexOf("--just-compile");
+const justCompile = justCompileIndex !== -1;
+
+if (justCompile) {
+	args.splice(justCompileIndex, 1); // Remove arg from paths
+}
+
 // Resolve directory names
-const paths = ARGS.map(path => $path.resolve(WORK_DIR, path));
+const paths = args.map(path => $path.resolve(WORK_DIR, path));
 
 const $watch = require("./index");
 
@@ -24,4 +34,4 @@ $watch.watch(paths, function(msg, type) {
 	} else {
 		console.log(msg);
 	}
-});
+}, justCompile);

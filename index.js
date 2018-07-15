@@ -93,9 +93,10 @@ async function compileFolder(path, logger) {
  *
  * @param {Array<string>} paths
  * @param {WatcherLogger} logger
+ * @param {boolean} justCompile
  * @returns {Promise.<void>}
  */
-async function watch (paths, logger) {
+async function watch (paths, logger, justCompile = false) {
 	if (!logger) logger = function() {};
 
 	let failedPaths = 0;
@@ -114,6 +115,10 @@ async function watch (paths, logger) {
 
 							let nextChangeAfter = new Date();
 							let changes = [];
+
+							if (justCompile) {
+								continue;
+							}
 
 							$fs.watch(path, function (eventType, filename) {
 								changes.push(filename);
@@ -153,12 +158,17 @@ async function watch (paths, logger) {
 	}
 
 	if (failedPaths != paths.length) {
-		logger("Watch LESS Compiler is watching...", watch.INFO);
+		if (justCompile) {
+			logger("LESS files just compiled");
+		} else {
+			logger("Watch LESS Compiler is watching...", watch.INFO);
+		}
 	}
 }
 
 module.exports = {
 	watch: watch,
+	compileFolder: compileFolder,
 	msgType: {
 		ERR: "error",
 		WARN: "warn",
