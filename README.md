@@ -11,6 +11,11 @@ npm install watch-less-compiler -g
 watch-less-compiler path/to/your/dir second/path/to/another/dirr and/more/paths
 ```
 
+Or with glob
+```
+watch-less-compiler path/**/*.less
+```
+
 ## Just compile argument
 If you want to only compile files without watching, eg. as pre-deploy proces, use --just-compile argument.
 ```

@@ -12,7 +12,8 @@
 	"keywords": [
 		"less",
 		"watch",
-		"compile"
+		"compile",
+		"glob"
 	],
 	"author": "Roman Jámbor",
 	"license": "MIT",
