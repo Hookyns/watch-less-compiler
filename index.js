@@ -110,7 +110,13 @@ async function watch (paths, logger, justCompile = false) {
 
 					for (let path of paths) {
 						try {
-							// First copile that folder
+							const stat = $fs.statSync(path);
+
+							if (!stat.isDirectory()) {
+								continue;
+							}
+							
+							// First compile that folder
 							await compileFolder(path, logger);
 
 							let nextChangeAfter = new Date();
